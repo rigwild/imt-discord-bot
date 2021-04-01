@@ -1,0 +1,21 @@
+{
+  "name": "imt-discord-bot",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:ts": "ts-node --files src/index.ts",
+    "dev": "NODE_ENV=dev BROWSER_VISIBLE=1 nodemon --exec ts-node --files src/index.ts"
+  },
+  "dependencies": {
+    "discord.js": "^12.5.2",
+    "dotenv-safe": "^8.2.0",
+    "playwright": "^1.10.0"
+  },
+  "devDependencies": {
+    "@types/dotenv-safe": "^8.1.1"
+  }
+}
