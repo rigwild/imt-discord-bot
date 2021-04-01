@@ -36,7 +36,7 @@ const messageHandler = async (msg: Discord.Message) => {
       await sendPlanning(channel)
     } catch (err) {
       console.error(err)
-      await channel.send(`🤨 Error! ${err.message}`)
+      await channel.send(`🤨 Error! ${err.message}`.slice(0, 1990))
       await msg.reactions.cache
         .get('⌛')
         ?.remove()

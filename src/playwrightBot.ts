@@ -74,7 +74,7 @@ export const screenshot = async () => {
     try {
       await setup()
     } finally {
-      if (process.env.KEEP_BROWSER_OPEN_WHEN_FINISHED !== '1') await browser.close()
+      if (process.env.KEEP_BROWSER_OPEN_WHEN_FINISHED !== '1') await browser?.close()
     }
     lastScreenshotTimestamp = Date.now()
   }
