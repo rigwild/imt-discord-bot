@@ -18,3 +18,5 @@ export const toHumanDate = (date: Date) =>
  */
 export const toHumanDateTime = (date: Date) =>
   `${toHumanDate(date)} - ${twoDigits(date.getHours())}:${twoDigits(date.getMinutes())}:${twoDigits(date.getSeconds())}`
+
+export const delay = (ms: number) => new Promise(res => setTimeout(res, ms))

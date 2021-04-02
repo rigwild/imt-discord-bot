@@ -4,7 +4,7 @@ import { DISCORD_TOKEN, SCREENSHOT_PATH } from './config'
 import { isPlanningCached, screenshot, screenshotDate } from './playwrightBot'
 import { toHumanDateTime } from './utils'
 
-// https://discordapp.com/oauth2/authorize?client_id=826932482590638100&scope=bot&permissions=10240
+// https://discordapp.com/oauth2/authorize?client_id=826932482590638100&scope=bot&permissions=2048
 
 let client: Discord.Client
 
