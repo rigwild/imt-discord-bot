@@ -77,6 +77,12 @@ const injectPlanningData = async (page: Page) => {
     })
   )
 
+  // Remove ugly red triangles
+  await page.evaluate(() =>
+    [...document.querySelectorAll('img[alt="Créer un Evènement"]')].map(x => (x.parentElement!.innerHTML = ''))
+  )
+}
+
 const readPlanning = async (page: Page) => {
   console.log('Screenshotting planning')
   await page.goto(PLANNING_URI)
