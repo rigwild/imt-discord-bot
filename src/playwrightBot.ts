@@ -99,8 +99,21 @@ const setup = async () => {
 
   browser = await getBrowser()
   const page = await getNewPage()
-  await login(page)
-  await delay(5_000) // Wait while the shitty cookies gets propagated xd
+
+  // Skip login, format: `name=value; name2=value`
+  if (process.env.COOKIES) {
+    const cookies = process.env
+      .COOKIES!.split('; ')
+      .map(x => x.split('='))
+      .map(([name, value]) => ({ name, value, url: WEBSITE_URI }))
+    console.log('Using provided cookies, skip login')
+    console.log(cookies)
+    await page.context().addCookies(cookies)
+  } else {
+    await login(page)
+    await delay(5_000) // Wait while the shitty cookies gets propagated xd
+  }
+
   await readPlanning(page)
 
   console.log('Success')
