@@ -1,3 +1,4 @@
+import { mkdirSync } from 'fs'
 import { resolve as pathResolve } from 'path'
 import { config as dotenvSafe } from 'dotenv-safe'
 
@@ -10,4 +11,8 @@ export const { PASS_USERNAME, PASS_PASSWORD, DISCORD_TOKEN } = process.env as Re
 
 export const PLANNING_CACHE_TIME = parseInt(process.env.PLANNING_CACHE_TIME!)
 
-export const SCREENSHOT_PATH = pathResolve(__dirname, '..', 'planning.png')
+export const SCREENSHOTS_DIR_PATH = pathResolve(__dirname, '..', 'screenshots')
+
+try {
+  mkdirSync(SCREENSHOTS_DIR_PATH)
+} catch {}

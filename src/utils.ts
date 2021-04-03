@@ -1,6 +1,15 @@
 const twoDigits = (serializable: any) => serializable.toString().padStart(2, '0')
 
 /**
+ * Transform a date object to a human-readable date format fr-FR
+ * `31-12-2019`
+ * @param date Date to format
+ * @returns formated date
+ */
+export const toHumanDateFR = (date: Date) =>
+  `${twoDigits(date.getDate())}/${twoDigits(date.getMonth() + 1)}/${date.getFullYear()}`
+
+/**
  * Transform a date object to a human-readable date format
  * `2019-12-31`
  * @param date Date to format

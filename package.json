@@ -8,7 +8,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "start:ts": "ts-node --files src/index.ts",
-    "dev": "NODE_ENV=dev BROWSER_VISIBLE=1 nodemon --exec ts-node --files src/index.ts",
+    "dev": "BROWSER_VISIBLE=1 nodemon --exec ts-node --files src/index.ts",
+    "dev:discord": "NODE_ENV=dev BROWSER_VISIBLE=1 nodemon --exec ts-node --files src/index.ts",
     "screenshot": "RUN=playwright BROWSER_VISIBLE=1 ts-node --files src/index.ts"
   },
   "dependencies": {
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "@types/dotenv-safe": "^8.1.1",
-    "@types/node-fetch": "^2.5.9"
+    "@types/node-fetch": "^2.5.9",
+    "@types/ws": "^7.4.1"
   }
 }

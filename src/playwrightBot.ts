@@ -1,14 +1,13 @@
 import { chromium, Browser, Page, ElementHandle } from 'playwright'
 import fetch from 'node-fetch'
-import { PASS_PASSWORD, PASS_USERNAME, PLANNING_CACHE_TIME, SCREENSHOT_PATH } from './config'
+import { PASS_PASSWORD, PASS_USERNAME } from './config'
 import { delay } from './utils'
+import { argToDate, getScreenshotPath, isPlanningCached, lastScreenshotTimestamp } from './cache'
 
 const WEBSITE_URI = 'https://pass.imt-atlantique.fr/'
 const PLANNING_URI = 'https://pass.imt-atlantique.fr/Eplug/Agenda/Agenda.asp'
 const PLANNING_EVENT_URI = (eventId: string) =>
   `https://pass.imt-atlantique.fr/Eplug/Agenda/Eve-Det.asp?NumEve=${eventId}`
-
-let lastScreenshotTimestamp = process.env.NODE_ENV === 'dev' ? Date.now() : 0 // Init never cached
 
 let browser: Browser
 
@@ -44,6 +43,25 @@ const login = async (page: Page) => {
     console.log('OAuth consent')
     await executeThenWaitForNavigation(page, () => page.click('input[type=submit][value=Accept]'))
   }
+}
+
+const selectPlanningDate = async (page: Page, date: string) => {
+  // Inject provided date
+  await page.evaluate(date => document.querySelector('input[name=CurDat]')?.setAttribute('value', date), date)
+  // Click planning icon
+  await page.click('img[title="Changer de Date"]')
+  // Find the selected date in the date selector popup
+  const selectedDateEle = await page.evaluateHandle(() =>
+    [...document.querySelectorAll('td.FondTresClair')].find(
+      x => x instanceof HTMLElement && x.style?.borderColor === 'rgb(0, 0, 0)' && x.style?.color === 'black'
+    )
+  )
+  if (!selectedDateEle) throw new Error('Could not select the date')
+  // Click selected date
+  await executeThenWaitForNavigation(page, () => selectedDateEle.asElement()!.click()).catch(err => {
+    console.error(err)
+    throw new Error('Could not click on the selected date')
+  })
 }
 
 const injectPlanningData = async (page: Page) => {
@@ -83,17 +101,18 @@ const injectPlanningData = async (page: Page) => {
   )
 }
 
-const readPlanning = async (page: Page) => {
+const readPlanning = async (page: Page, date: string) => {
   console.log('Screenshotting planning')
   await page.goto(PLANNING_URI)
 
+  if (date) await selectPlanningDate(page, date)
   await injectPlanningData(page)
 
   const planningElement = await page.$('table[bgcolor="#F7F7F7"]')
-  await planningElement?.screenshot({ path: SCREENSHOT_PATH })
+  await planningElement?.screenshot({ path: getScreenshotPath(date) })
 }
 
-const setup = async () => {
+const setup = async (date: string) => {
   console.log(`${new Date().toLocaleString()} - Starting to get the planning`)
   console.time('bot')
 
@@ -107,30 +126,27 @@ const setup = async () => {
       .map(x => x.split('='))
       .map(([name, value]) => ({ name, value, url: WEBSITE_URI }))
     console.log('Using provided cookies, skip login')
-    console.log(cookies)
     await page.context().addCookies(cookies)
   } else {
     await login(page)
     await delay(5_000) // Wait while the shitty cookies gets propagated xd
   }
 
-  await readPlanning(page)
+  await readPlanning(page, date)
 
   console.log('Success')
   console.timeEnd('bot')
 }
 
-export const isPlanningCached = () => Date.now() < lastScreenshotTimestamp + PLANNING_CACHE_TIME
-export const screenshotDate = () => new Date(lastScreenshotTimestamp)
-
 /** Go screenshot the planning if last one is too old */
-export const screenshot = async () => {
-  if (!isPlanningCached()) {
+export const screenshot = async (date?: string) => {
+  if (!date) date = argToDate()
+  if (!isPlanningCached(date)) {
     try {
-      await setup()
+      await setup(date)
+      lastScreenshotTimestamp[date] = Date.now()
     } finally {
       if (process.env.KEEP_BROWSER_OPEN_WHEN_FINISHED !== '1') await browser?.close()
     }
-    lastScreenshotTimestamp = Date.now()
   }
 }

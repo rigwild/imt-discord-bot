@@ -1,46 +1,59 @@
 import Discord from 'discord.js'
 import { basename } from 'path'
-import { DISCORD_TOKEN, SCREENSHOT_PATH } from './config'
-import { isPlanningCached, screenshot, screenshotDate } from './playwrightBot'
+import { DISCORD_TOKEN } from './config'
+import { screenshot } from './playwrightBot'
+import { argToDate, getScreenshotPath, isPlanningCached, screenshotDate } from './cache'
 import { toHumanDateTime } from './utils'
 
 // https://discordapp.com/oauth2/authorize?client_id=826932482590638100&scope=bot&permissions=2048
 
 let client: Discord.Client
 
-const getEmbed = () =>
-  new Discord.MessageEmbed()
-    .attachFiles([SCREENSHOT_PATH])
-    .setImage(`attachment://${basename(SCREENSHOT_PATH)}`)
-    .setFooter(`Date de capture: ${toHumanDateTime(screenshotDate())}`)
+const getEmbed = (planningDate: string) => {
+  const captureDate = screenshotDate(planningDate)
+  const screenshotPath = getScreenshotPath(planningDate)
+  const embed = new Discord.MessageEmbed()
+    .setTitle(`Planning à la date du ${planningDate}`)
+    .attachFiles([screenshotPath])
+    .setImage(`attachment://${basename(screenshotPath)}`)
+  if (captureDate) embed.setFooter(`Date de capture: ${toHumanDateTime(captureDate)}`)
+  return embed
+}
 
-const sendPlanning = (channel: Discord.Channel) => {
-  if (channel?.isText()) return channel.send({ embed: getEmbed() })
+const sendPlanning = (channel: Discord.Channel, planningDate: string) => {
+  if (channel?.isText()) return channel.send({ embed: getEmbed(planningDate) })
 }
 
 const messageHandler = async (msg: Discord.Message) => {
   const channel = msg.channel
-  if (msg.content === '!help')
+  const msgContent = msg.content.trim()
+  if (!msgContent.startsWith('!')) return
+
+  const msgAgs = msgContent
+    .split(' ')
+    .map(x => x.trim())
+    .slice(1)
+
+  if (msgContent === '!help')
     channel.send({
       embed: new Discord.MessageEmbed()
+        .setTitle('Liste des commandes')
         .addField('`!help`', "Afficher l'aide")
         .addField('`!planning`', "Afficher l'emploi du temps")
+        .addField('`!planning 1`', "Afficher l'emploi du temps dans `x` semaine(s)")
+        .addField('`!planning 31/12/2021`', "Afficher l'emploi du temps à une date")
         .addField('Repo GitHub', '[rigwild/imt-discord-bot](https://github.com/rigwild/imt-discord-bot)')
     })
-  else if (msg.content === '!planning') {
+  else if (msgContent.startsWith('!planning')) {
     try {
-      if (!isPlanningCached()) {
-        const [reaction] = await Promise.all([msg.react('⌛'), screenshot()])
-        await reaction.remove().catch(() => {})
-      }
-      await sendPlanning(channel)
+      const planningDate = argToDate(msgAgs[0])
+      if (!isPlanningCached(planningDate)) await Promise.all([msg.react('⌛'), screenshot(planningDate)])
+      await sendPlanning(channel, planningDate)
     } catch (err) {
       console.error(err)
-      await channel.send(`🤨 Error! ${err.message}`.slice(0, 1990))
-      await msg.reactions.cache
-        .get('⌛')
-        ?.remove()
-        .catch(() => {})
+      await channel.send(`❌ Error! 🤨 ${err.message}`.slice(0, 1990))
+    } finally {
+      await msg.reactions.resolve('⌛')?.users.remove(client.user?.id)
     }
   }
 }
