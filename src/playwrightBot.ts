@@ -102,14 +102,26 @@ const injectPlanningData = async (page: Page) => {
 }
 
 const readPlanning = async (page: Page, date: string) => {
-  console.log('Screenshotting planning')
+  console.log('Loading planning')
   await page.goto(PLANNING_URI)
 
+  console.log('Selecting date')
   if (date) await selectPlanningDate(page, date)
+  console.log('Injecting teachers and rooms')
   await injectPlanningData(page)
 
   const planningElement = await page.$('table[bgcolor="#F7F7F7"]')
-  await planningElement?.screenshot({ path: getScreenshotPath(date) })
+  const planningElementBox = (await planningElement?.boundingBox())!
+  await page.screenshot({
+    path: getScreenshotPath(date),
+    clip: {
+      x: planningElementBox.x,
+      y: planningElementBox.y,
+      width: planningElementBox.width - 500,
+      height: planningElementBox.height - 110
+    },
+    fullPage: true
+  })
 }
 
 const setup = async (date: string) => {
