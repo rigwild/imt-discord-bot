@@ -19,10 +19,14 @@ const convertNumberWeekOffsetToDate = (offset: string) =>
  */
 export const argToDate = (_date?: string) => {
   let date = !!_date ? _date.trim() : '0'
-  if (date.length <= 2) date = convertNumberWeekOffsetToDate(date)
-  if (['-', '.', ';', ' '].some(x => date.includes(x)))
-    throw new Error('Invalid date format! Date should be in fr-FR format (e.g. `31/12/2021`)')
-  return date
+
+  // Convert week offset
+  if (date.length <= 5 && /^\-?[0-9]+$/.test(date)) date = convertNumberWeekOffsetToDate(date)
+
+  // FR date
+  if (/^[0-9]{1,2}\/[0-9]{1,2}\/[0-9]{4}$/.test(date)) return date
+
+  throw new Error('Invalid date format! Date should be in FR format (e.g. `31/12/2021`)')
 }
 
 export const isPlanningCached = (date: string) =>
