@@ -1,10 +1,10 @@
 import { resolve as pathResolve } from 'path'
 import { PLANNING_CACHE_TIME, SCREENSHOTS_DIR_PATH } from './config'
-import { toHumanDateFR } from './utils'
+import { toHumanDateFR, cookiesDeserialize } from './utils'
 
 const dateOrDefault = (date?: string) => (!!date ? date : '1')
 
-/** Convert week offset numbers (e.g.`1`, `-1`) to FR date string (i.e. `31-12-2021`), `0` is current week */
+/** Convert week offset numbers (e.g.`1`, `-1`) to FR date string (i.e. `31-12-2021`) (`0` is current week) */
 const convertNumberWeekOffsetToDate = (offset: string) =>
   toHumanDateFR(new Date(Date.now() + parseInt(offset, 10) * 3600 * 24 * 7 * 1000))
 
@@ -12,7 +12,7 @@ const convertNumberWeekOffsetToDate = (offset: string) =>
  * Convert a user-provided date argument to a valid FR date (i.e. `31-12-2021`)
  *
  * - Nothing: current week
- * - Week offset: `-1`, `1`, `17`, `0` is current week
+ * - Week offset: `-1`, `1`, `17` (`0` is current week)
  * - Date
  * @param _date
  * @returns an hopefully-valid FR date

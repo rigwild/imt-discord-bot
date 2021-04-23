@@ -45,16 +45,31 @@ const messageHandler = async (msg: Discord.Message) => {
         .addField('Repo GitHub', '[rigwild/imt-discord-bot](https://github.com/rigwild/imt-discord-bot)')
     })
   else if (msgContent.startsWith('!planning')) {
-    try {
-      const planningDate = argToDate(msgAgs[0])
-      if (!isPlanningCached(planningDate)) await Promise.all([msg.react('⌛'), screenshot(planningDate)])
-      await sendPlanning(channel, planningDate)
-    } catch (err) {
-      console.error(err)
-      await channel.send(`❌ Error! 🤨 ${err.message}`.slice(0, 1990))
-    } finally {
-      await msg.reactions.resolve('⌛')?.users.remove(client.user?.id)
+    let tryCount = 0
+
+    const run = async () => {
+      try {
+        const planningDate = argToDate(msgAgs[0])
+        if (!isPlanningCached(planningDate))
+          await Promise.all([
+            tryCount === 0 ? msg.react('⌛') : null,
+            screenshot(msgAgs.length > 0 ? planningDate : undefined)
+          ])
+        await sendPlanning(channel, planningDate)
+      } catch (err) {
+        console.error(err)
+        await channel.send(
+          `❌ Error! 🤨 ${tryCount === 0 ? 'Let me try it one more time... ' : ''}- ${err.message}`.slice(0, 1800)
+        )
+        if (tryCount === 0) {
+          tryCount++
+          await run()
+        }
+      } finally {
+        await msg.reactions.resolve('⌛')?.users.remove(client.user?.id)
+      }
     }
+    await run()
   }
 }
 
