@@ -1,3 +1,6 @@
+import { WEBSITE_URI } from './playwrightBot'
+import type { Cookie } from 'playwright'
+
 const twoDigits = (serializable: any) => serializable.toString().padStart(2, '0')
 
 /**
@@ -29,3 +32,12 @@ export const toHumanDateTime = (date: Date) =>
   `${toHumanDate(date)} - ${twoDigits(date.getHours())}:${twoDigits(date.getMinutes())}:${twoDigits(date.getSeconds())}`
 
 export const delay = (ms: number) => new Promise(res => setTimeout(res, ms))
+
+export const cookiesSerialize = (cookies: Cookie[]) => cookies.map(x => `${x.name}=${x.value}`).join('; ')
+export const cookiesPlaywrightConvert = (cookies: Cookie[]) =>
+  cookies.map(({ name, value }) => ({ name, value, url: WEBSITE_URI }))
+export const cookiesDeserialize = (cookies: string) =>
+  cookies
+    .split('; ')
+    .map(x => x.split('='))
+    .map(([name, value]) => ({ name, value, url: WEBSITE_URI }))

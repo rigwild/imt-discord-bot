@@ -41,3 +41,11 @@ export const getScreenshotPath = (date: string) => pathResolve(SCREENSHOTS_DIR_P
 export const lastScreenshotTimestamp: Record<string, number> = {
   [argToDate()]: process.env.NODE_ENV === 'dev' ? Date.now() : 0 // Init never cached
 }
+
+// Map of individual planning event http cache
+export const individualPlanningEventCache: Record<string, { teacher: string; room: string }> = {}
+
+// Cookies cache
+export class CachedCookies {
+  public static obj: ReturnType<typeof cookiesDeserialize> | null = null
+}

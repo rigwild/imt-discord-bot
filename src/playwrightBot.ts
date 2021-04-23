@@ -1,10 +1,17 @@
 import { chromium, Browser, Page, ElementHandle } from 'playwright'
 import fetch from 'node-fetch'
 import { PASS_PASSWORD, PASS_USERNAME } from './config'
-import { delay } from './utils'
-import { argToDate, getScreenshotPath, isPlanningCached, lastScreenshotTimestamp } from './cache'
+import { cookiesDeserialize, cookiesPlaywrightConvert, cookiesSerialize, delay } from './utils'
+import {
+  argToDate,
+  CachedCookies,
+  getScreenshotPath,
+  individualPlanningEventCache,
+  isPlanningCached,
+  lastScreenshotTimestamp
+} from './cache'
 
-const WEBSITE_URI = 'https://pass.imt-atlantique.fr/'
+export const WEBSITE_URI = 'https://pass.imt-atlantique.fr/'
 const PLANNING_URI = 'https://pass.imt-atlantique.fr/Eplug/Agenda/Agenda.asp'
 const PLANNING_EVENT_URI = (eventId: string) =>
   `https://pass.imt-atlantique.fr/Eplug/Agenda/Eve-Det.asp?NumEve=${eventId}`
@@ -76,19 +83,22 @@ const injectPlanningData = async (page: Page) => {
         const eventId = (await eventElement.innerHTML()).toString().match(/DetEve\(\'(.*?)\'/)?.[1]
         if (!eventId) return
 
-        const cookies = await page.context().cookies(WEBSITE_URI)
-        const eventHtml = await fetch(PLANNING_EVENT_URI(eventId), {
-          headers: { cookie: cookies.map(x => `${x.name}=${x.value}`).join('; ') }
-        }).then(res => res.text())
-        const teacher = eventHtml.match(/Formateur.*?color=.*?>(.*?)</)?.[1]!
-        const room = eventHtml.match(/VisRes.*?>(.*?)</)?.[1].replace(/\\/g, '')!
-        await eventElement.evaluate(
-          (ele, { teacher, room }) => {
-            const b = ele.querySelector('b')
-            if (b) b.innerHTML += `<br>${teacher} - ${room}`
-          },
-          { teacher, room }
-        )
+        // Load event content if not cached yet
+        if (!(eventId in individualPlanningEventCache)) {
+          console.log(`Event id=${eventId} was not in cache, load it`)
+          const eventHtml = await fetch(PLANNING_EVENT_URI(eventId), {
+            headers: { cookie: cookiesSerialize(await page.context().cookies(WEBSITE_URI)) }
+          }).then(res => res.text())
+          individualPlanningEventCache[eventId] = {
+            teacher: eventHtml.match(/Formateur.*?color=.*?>(.*?)</)?.[1] || '',
+            room: eventHtml.match(/VisRes.*?>(.*?)</)?.[1].replace(/\\/g, '') || ''
+          }
+        }
+
+        await eventElement.evaluate((ele, { teacher, room }) => {
+          const b = ele.querySelector('b')
+          if (b) b.innerHTML += `<br>${teacher} - ${room}`
+        }, individualPlanningEventCache[eventId])
       } catch (err) {
         console.error(err)
       }
@@ -101,15 +111,20 @@ const injectPlanningData = async (page: Page) => {
   )
 }
 
-const readPlanning = async (page: Page, date: string) => {
+const readPlanning = async (page: Page, date: string, useDate = false) => {
   console.log('Loading planning')
   await page.goto(PLANNING_URI)
 
-  console.log('Selecting date')
-  if (date) await selectPlanningDate(page, date)
+  await checkPageIsAuthenticated(page, PLANNING_URI)
+
+  if (useDate) {
+    console.log('Selecting date')
+    await selectPlanningDate(page, date)
+  }
   console.log('Injecting teachers and rooms')
   await injectPlanningData(page)
 
+  await delay(100)
   const planningElement = await page.$('table[bgcolor="#F7F7F7"]')
   const planningElementBox = (await planningElement?.boundingBox())!
   await page.screenshot({
@@ -124,38 +139,54 @@ const readPlanning = async (page: Page, date: string) => {
   })
 }
 
-const setup = async (date: string) => {
+const checkPageIsAuthenticated = async (page: Page, thenGoTo?: string) => {
+  if (!(await page.content()).includes('Préférences')) {
+    console.log('Credentials did not work, clearing cookies and logging back in')
+    await page.context().clearCookies()
+    CachedCookies.obj = null
+    await setupCredentials(page)
+    if (thenGoTo) await page.goto(thenGoTo)
+  }
+}
+
+const setupCredentials = async (page: Page) => {
+  if (!CachedCookies.obj) {
+    if (process.env.COOKIES) {
+      // Skip login, format: `name=value; name2=value`
+      console.log('Using provided environment cookies, skip login')
+      CachedCookies.obj = cookiesDeserialize(process.env.COOKIES!)
+      await page.context().addCookies(CachedCookies.obj)
+      delete process.env.COOKIES
+    } else {
+      await login(page)
+      await delay(5_000) // Wait while the shitty cookies gets propagated xd
+      // Cache cookies
+      CachedCookies.obj = cookiesPlaywrightConvert(await page.context().cookies(WEBSITE_URI))
+    }
+  } else await page.context().addCookies(CachedCookies.obj)
+}
+
+const setup = async (date: string, useDate = false) => {
   console.log(`${new Date().toLocaleString()} - Starting to get the planning`)
   console.time('bot')
 
   browser = await getBrowser()
   const page = await getNewPage()
 
-  // Skip login, format: `name=value; name2=value`
-  if (process.env.COOKIES) {
-    const cookies = process.env
-      .COOKIES!.split('; ')
-      .map(x => x.split('='))
-      .map(([name, value]) => ({ name, value, url: WEBSITE_URI }))
-    console.log('Using provided cookies, skip login')
-    await page.context().addCookies(cookies)
-  } else {
-    await login(page)
-    await delay(5_000) // Wait while the shitty cookies gets propagated xd
-  }
+  await setupCredentials(page)
 
-  await readPlanning(page, date)
+  await readPlanning(page, date, useDate)
 
   console.log('Success')
   console.timeEnd('bot')
 }
 
 /** Go screenshot the planning if last one is too old */
-export const screenshot = async (date?: string) => {
-  if (!date) date = argToDate()
+export const screenshot = async (_date?: string) => {
+  let date: string = _date ? _date : argToDate()
   if (!isPlanningCached(date)) {
     try {
-      await setup(date)
+      await setup(date, !!_date)
       lastScreenshotTimestamp[date] = Date.now()
     } finally {
       if (process.env.KEEP_BROWSER_OPEN_WHEN_FINISHED !== '1') await browser?.close()
