@@ -1,6 +1,6 @@
 import { resolve as pathResolve } from 'path'
-import { PLANNING_CACHE_TIME, SCREENSHOTS_DIR_PATH } from './config'
-import { toHumanDateFR, cookiesDeserialize } from './utils'
+import { PLANNING_CACHE_TIME, SCREENSHOTS_DIR_PATH } from './config.js'
+import { toHumanDateFR, cookiesDeserialize } from './utils.js'
 
 const dateOrDefault = (date?: string) => (!!date ? date : '1')
 

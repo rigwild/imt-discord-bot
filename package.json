@@ -3,17 +3,18 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "type": "module",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "start:ts": "ts-node --files src/index.ts",
-    "dev": "BROWSER_VISIBLE=1 nodemon --exec ts-node --files src/index.ts",
-    "dev:discord": "NODE_ENV=dev BROWSER_VISIBLE=1 nodemon --exec ts-node --files src/index.ts",
-    "screenshot": "RUN=playwright BROWSER_VISIBLE=1 ts-node --files src/index.ts"
+    "start:ts": "node --loader ts-node/esm src/index.ts",
+    "dev": "BROWSER_VISIBLE=1 nodemon --exec node --loader ts-node/esm src/index.ts",
+    "dev:discord": "NODE_ENV=dev BROWSER_VISIBLE=1 nodemon --exec node --loader ts-node/esm src/index.ts",
+    "screenshot": "RUN=playwright BROWSER_VISIBLE=1 node --loader ts-node/esm src/index.ts"
   },
   "dependencies": {
-    "discord.js": "^12.5.2",
+    "discord.js": "^12.5.3",
     "dotenv-safe": "^8.2.0",
     "node-fetch": "^2.6.1",
     "playwright": "^1.10.0"
@@ -21,6 +22,8 @@
   "devDependencies": {
     "@types/dotenv-safe": "^8.1.1",
     "@types/node-fetch": "^2.5.9",
-    "@types/ws": "^7.4.1"
+    "@types/ws": "^7.4.1",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.4"
   }
 }

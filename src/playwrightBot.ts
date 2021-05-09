@@ -1,7 +1,8 @@
 import { chromium, Browser, Page, ElementHandle } from 'playwright'
 import fetch from 'node-fetch'
-import { PASS_PASSWORD, PASS_USERNAME } from './config'
-import { cookiesDeserialize, cookiesPlaywrightConvert, cookiesSerialize, delay } from './utils'
+
+import { PASS_PASSWORD, PASS_USERNAME } from './config.js'
+import { cookiesDeserialize, cookiesPlaywrightConvert, cookiesSerialize, delay } from './utils.js'
 import {
   argToDate,
   CachedCookies,
@@ -9,7 +10,7 @@ import {
   individualPlanningEventCache,
   isPlanningCached,
   lastScreenshotTimestamp
-} from './cache'
+} from './cache.js'
 
 export const WEBSITE_URI = 'https://pass.imt-atlantique.fr/'
 const PLANNING_URI = 'https://pass.imt-atlantique.fr/Eplug/Agenda/Agenda.asp'

@@ -1,5 +1,5 @@
-import { screenshot } from './playwrightBot'
-import { run as runDiscord } from './discordBot'
+import { screenshot } from './playwrightBot.js'
+import { run as runDiscord } from './discordBot.js'
 
 if (process.env.RUN === 'playwright') screenshot()
 else runDiscord()

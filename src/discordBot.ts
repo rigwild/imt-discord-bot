@@ -1,9 +1,9 @@
 import Discord from 'discord.js'
 import { basename } from 'path'
-import { DISCORD_TOKEN } from './config'
-import { screenshot } from './playwrightBot'
-import { argToDate, getScreenshotPath, isPlanningCached, screenshotDate } from './cache'
-import { toHumanDateTime } from './utils'
+import { DISCORD_TOKEN } from './config.js'
+import { screenshot } from './playwrightBot.js'
+import { argToDate, getScreenshotPath, isPlanningCached, screenshotDate } from './cache.js'
+import { toHumanDateTime } from './utils.js'
 
 // https://discordapp.com/oauth2/authorize?client_id=826932482590638100&scope=bot&permissions=2048
 

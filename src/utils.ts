@@ -1,4 +1,4 @@
-import { WEBSITE_URI } from './playwrightBot'
+import { WEBSITE_URI } from './playwrightBot.js'
 import type { Cookie } from 'playwright'
 
 const twoDigits = (serializable: any) => serializable.toString().padStart(2, '0')
